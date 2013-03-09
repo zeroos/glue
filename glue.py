@@ -39,6 +39,7 @@ DEFAULT_SETTINGS = {
     'crop': False,
     'url': '',
     'less': False,
+    'json': False,
     'force': False,
     'optipng': False,
     'html': False,
@@ -845,7 +846,14 @@ class Sprite(object):
         if self.config.no_css:
             return
 
-        format = 'less' if self.config.less else 'css'
+        jsonDict = {}
+        if self.config.less:
+            format = 'less'
+        elif self.config.json:
+            format = 'json'
+        else:
+            format = 'css'
+
         output_path = self.manager.output_path('css')
         filename = '%s.%s' % (self.filename, format)
         css_filename = os.path.join(output_path, filename)
@@ -870,7 +878,8 @@ class Sprite(object):
         css_file = open(css_filename, 'w')
 
         # Write the hash line to the file.
-        css_file.write(hash_line)
+        if format != 'json':
+            css_file.write(hash_line)
 
         # Get all the class names
         class_names = ['.%s' % i.class_name for i in self.images]
@@ -883,14 +892,15 @@ class Sprite(object):
 
         # add the global style for all the sprites for less bloat
         template = self.config.global_template.decode('unicode-escape')
-        css_file.write(template % {'all_classes': class_names,
+        if format != 'json':
+            css_file.write(template % {'all_classes': class_names,
                                    'sprite_url': self.image_url()})
 
         # compile one template for each file
         margin = int(self.config.margin)
 
         for image in self.images:
-
+            
             x = '%spx' % round_up((image.x * -1 - margin * self.max_ratio) / self.max_ratio)
             y = '%spx' % round_up((image.y * -1 - margin * self.max_ratio) / self.max_ratio)
 
@@ -898,13 +908,17 @@ class Sprite(object):
             width = '%spx' % round_up((image.width / self.max_ratio) + image.horizontal_padding)
 
             template = self.config.each_template.decode('unicode-escape')
-            css_file.write(template % {'class_name': '.%s' % image.class_name,
+            if format != 'json':
+                css_file.write(template % {'class_name': '.%s' % image.class_name,
                                        'identifier': image.class_name,
                                        'sprite_url': self.image_url(),
                                        'height': height,
                                        'width': width,
                                        'y': y,
                                        'x': x})
+
+
+            jsonDict[image.filename] = {'w': width, 'h': height, 'x': x, 'y':y}
 
         # If we have some additional ratio, we need to add one media query
         # for each one.
@@ -920,7 +934,13 @@ class Sprite(object):
                                 sprite_url=self.image_url(ratio),
                                 all_classes=class_names,
                                 **dict(canvas_size))
-                    css_file.write(self.config.ratio_template % data)
+                    if format != 'json':
+                        css_file.write(self.config.ratio_template % data)
+
+        if format == 'json':
+            import simplejson
+            css_file.write(simplejson.dumps(jsonDict))
+
         css_file.close()
 
     def save_html(self):
@@ -1372,6 +1392,8 @@ def main():
             help="crop images removing unnecessary transparent margins")
     parser.add_option("-l", "--less", dest="less", action='store_true',
             help="generate output stylesheets as .less instead of .css")
+    parser.add_option("-j", "--json", dest="json", action='store_true',
+            help="generate output description as json")
     parser.add_option("-u", "--url", dest="url",
             help="prepend this url to the sprites filename")
     parser.add_option("-q", "--quiet", dest="quiet", action='store_true',
@@ -1562,7 +1584,7 @@ def main():
             sys.stderr.write("Config: %s\n" % config.sources)
             sys.stderr.write("Args: %s\n" % sys.argv)
             sys.stderr.write("\n")
-
+        raise
         sys.stderr.write("Error: Unknown Error.\n")
         sys.exit(1)
 

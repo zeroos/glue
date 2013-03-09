@@ -1,3 +1,10 @@
+This fork
+=========
+
+I've created this fork to add JSON output support.
+Currenlty it only works for one spritesheet and probobly lacks some
+functionalitites, but it works for me.
+
 Glue
 ====
 

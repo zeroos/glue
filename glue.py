@@ -901,8 +901,8 @@ class Sprite(object):
 
         for image in self.images:
             
-            x = '%spx' % round_up((image.x * -1 - margin * self.max_ratio) / self.max_ratio)
-            y = '%spx' % round_up((image.y * -1 - margin * self.max_ratio) / self.max_ratio)
+            x = '%spx' % round_up((image.x - margin * self.max_ratio) / self.max_ratio)
+            y = '%spx' % round_up((image.y - margin * self.max_ratio) / self.max_ratio)
 
             height = '%spx' % round_up((image.height / self.max_ratio) + image.vertical_padding)
             width = '%spx' % round_up((image.width / self.max_ratio) + image.horizontal_padding)
